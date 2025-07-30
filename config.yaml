@@ -21,11 +21,6 @@ services:
     host: localhost
     port: 50054
 
-jwt:
-  secret_key: "your-secret-key-change-in-production"
-  access_expiry: 15m
-  refresh_expiry: 168h
-
 logging:
   level: info
   format: json 
