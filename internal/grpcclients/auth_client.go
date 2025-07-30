@@ -21,6 +21,91 @@ func min(a, b int) int {
 	return b
 }
 
+// safeLogAuthResponse creates a safe version of AuthResponse for logging
+// that excludes sensitive token data
+func safeLogAuthResponse(resp *pb.AuthResponse) map[string]interface{} {
+	if resp == nil {
+		return map[string]interface{}{"response": "nil"}
+	}
+
+	safeResp := map[string]interface{}{
+		"success": resp.Success,
+		"message": resp.Message,
+		"errors":  resp.Errors,
+	}
+
+	// Safely log user data if present
+	if resp.UserData != nil {
+		safeResp["userData"] = map[string]interface{}{
+			"id":        resp.UserData.Id,
+			"email":     resp.UserData.Email,
+			"firstName": resp.UserData.FirstName,
+			"lastName":  resp.UserData.LastName,
+			"role":      resp.UserData.Role,
+			"createdAt": resp.UserData.CreatedAt,
+			"updatedAt": resp.UserData.UpdatedAt,
+			"isActive":  resp.UserData.IsActive,
+		}
+	}
+
+	// Safely log token data if present (excluding actual tokens)
+	if resp.TokenData != nil {
+		safeResp["tokenData"] = map[string]interface{}{
+			"accessToken":  "[REDACTED]",
+			"refreshToken": "[REDACTED]",
+			"expiresIn":    resp.TokenData.ExpiresIn,
+			"tokenType":    resp.TokenData.TokenType,
+		}
+	}
+
+	return safeResp
+}
+
+// safeLogValidateTokenResponse creates a safe version of ValidateTokenResponse for logging
+func safeLogValidateTokenResponse(resp *pb.ValidateTokenResponse) map[string]interface{} {
+	if resp == nil {
+		return map[string]interface{}{"response": "nil"}
+	}
+
+	return map[string]interface{}{
+		"valid":   resp.Valid,
+		"userId":  resp.UserId,
+		"email":   resp.Email,
+		"role":    resp.Role,
+		"exp":     resp.Exp,
+		"message": resp.Message,
+	}
+}
+
+// safeLogUserProfileResponse creates a safe version of UserProfileResponse for logging
+func safeLogUserProfileResponse(resp *pb.UserProfileResponse) map[string]interface{} {
+	if resp == nil {
+		return map[string]interface{}{"response": "nil"}
+	}
+
+	safeResp := map[string]interface{}{
+		"success": resp.Success,
+		"message": resp.Message,
+		"errors":  resp.Errors,
+	}
+
+	// Safely log user data if present
+	if resp.UserData != nil {
+		safeResp["userData"] = map[string]interface{}{
+			"id":        resp.UserData.Id,
+			"email":     resp.UserData.Email,
+			"firstName": resp.UserData.FirstName,
+			"lastName":  resp.UserData.LastName,
+			"role":      resp.UserData.Role,
+			"createdAt": resp.UserData.CreatedAt,
+			"updatedAt": resp.UserData.UpdatedAt,
+			"isActive":  resp.UserData.IsActive,
+		}
+	}
+
+	return safeResp
+}
+
 // AuthClient represents a gRPC client for the auth service
 type AuthClient struct {
 	client pb.AuthServiceClient
@@ -90,7 +175,7 @@ func (c *AuthClient) Register(ctx context.Context, email, password, firstName, l
 		return nil, fmt.Errorf("register failed: %v", err)
 	}
 
-	c.logger.Debug("Register request successful", zap.Any("response", resp))
+	c.logger.Debug("Register request successful", zap.Any("response", safeLogAuthResponse(resp)))
 
 	return resp, nil
 }
@@ -119,7 +204,7 @@ func (c *AuthClient) Login(ctx context.Context, email, password string) (*pb.Aut
 		return nil, fmt.Errorf("login failed: %v", err)
 	}
 
-	c.logger.Debug("Login request successful", zap.Any("response", resp))
+	c.logger.Debug("Login request successful", zap.Any("response", safeLogAuthResponse(resp)))
 
 	return resp, nil
 }
@@ -147,7 +232,7 @@ func (c *AuthClient) ValidateToken(ctx context.Context, token string) (*pb.Valid
 		return nil, fmt.Errorf("token validation failed: %v", err)
 	}
 
-	c.logger.Debug("Token validation request successful", zap.Any("response", resp))
+	c.logger.Debug("Token validation request successful", zap.Any("response", safeLogValidateTokenResponse(resp)))
 
 	return resp, nil
 }
@@ -175,7 +260,7 @@ func (c *AuthClient) RefreshToken(ctx context.Context, refreshToken string) (*pb
 		return nil, fmt.Errorf("token refresh failed: %v", err)
 	}
 
-	c.logger.Debug("Token refresh request successful", zap.Any("response", resp))
+	c.logger.Debug("Token refresh request successful", zap.Any("response", safeLogAuthResponse(resp)))
 
 	return resp, nil
 }
@@ -203,7 +288,7 @@ func (c *AuthClient) GetProfile(ctx context.Context, userID string) (*pb.UserPro
 		return nil, fmt.Errorf("get profile failed: %v", err)
 	}
 
-	c.logger.Debug("Get profile request successful", zap.Any("response", resp))
+	c.logger.Debug("Get profile request successful", zap.Any("response", safeLogUserProfileResponse(resp)))
 
 	return resp, nil
 }

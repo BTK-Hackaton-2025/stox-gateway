@@ -27,7 +27,11 @@ func main() {
 	}
 
 	// Initialize logger with config-driven settings
-	logger.InitLogger(cfg.Logging.Level, cfg.Logging.Format, cfg.Server.Environment)
+	if err := logger.InitLogger(cfg.Logging.Level, cfg.Logging.Format, cfg.Server.Environment); err != nil {
+		// Use basic logging before we have our configured logger
+		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
 	defer logger.Sync()
 
 	log := logger.Logger

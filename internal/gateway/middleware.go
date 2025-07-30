@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -20,7 +21,10 @@ const requestIDKey contextKey = "request_id"
 // generateRequestID creates a random request ID
 func generateRequestID() string {
 	bytes := make([]byte, 8)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// Return a fallback string if random number generation fails
+		return fmt.Sprintf("fallback-request-id-%d", time.Now().UnixNano())
+	}
 	return hex.EncodeToString(bytes)
 }
 

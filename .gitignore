@@ -57,3 +57,5 @@ Thumbs.db
 
 # Air (hot reload)
 tmp/ 
+
+config.yaml
