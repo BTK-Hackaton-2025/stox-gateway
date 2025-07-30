@@ -36,7 +36,7 @@ func main() {
 	router := gateway.NewRouter(authHandler)
 
 	// Apply middleware
-	handler := gateway.CORSMiddleware(gateway.LoggingMiddleware(router))
+	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))
 
 	// Create HTTP server
 	server := &http.Server{

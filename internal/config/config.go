@@ -13,6 +13,7 @@ type Config struct {
 	Services ServicesConfig `mapstructure:"services"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Logging  LoggingConfig  `mapstructure:"logging"`
+	CORS     CORSConfig     `mapstructure:"cors"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -49,6 +50,13 @@ type JWTConfig struct {
 type LoggingConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
+}
+
+// CORSConfig holds CORS-related configuration
+type CORSConfig struct {
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
+	AllowedMethods []string `mapstructure:"allowed_methods"`
+	AllowedHeaders []string `mapstructure:"allowed_headers"`
 }
 
 // LoadConfig reads configuration from file or environment variables
@@ -107,6 +115,11 @@ func setDefaults() {
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "json")
+
+	// CORS defaults - secure by default
+	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:8080"})
+	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
+	viper.SetDefault("cors.allowed_headers", []string{"Content-Type", "Authorization"})
 }
 
 // GetAuthServiceAddress returns the full address for the auth service

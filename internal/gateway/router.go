@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -8,6 +9,12 @@ import (
 
 // Router sets up the HTTP routes
 func NewRouter(authHandler *AuthHandler) *mux.Router {
+	// Check for nil authHandler to prevent runtime panics
+	if authHandler == nil {
+		log.Printf("NewRouter: authHandler parameter is nil, cannot set up auth routes")
+		return nil
+	}
+
 	router := mux.NewRouter()
 
 	// API versioning
@@ -22,8 +29,17 @@ func NewRouter(authHandler *AuthHandler) *mux.Router {
 
 	// Health check
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		// Set status header - WriteHeader doesn't return an error but can fail silently
+		// if called after writing has begun, so we call it first
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+
+		// Write response body and handle potential errors
+		if _, err := w.Write([]byte("OK")); err != nil {
+			// Log the error since we can't change the response at this point
+			log.Printf("Health check: failed to write response body: %v", err)
+			// Note: At this point, the response has already been started with 200 OK
+			// so we can't send an error response to the client
+		}
 	}).Methods("GET")
 
 	return router

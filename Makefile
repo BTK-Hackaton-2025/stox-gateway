@@ -7,7 +7,8 @@ run:
 clean:
 	rm -f bin/main
 
-.PHONY: build run clean
-
 run-dev:
 	go run cmd/api-gateway/main.go
+
+.PHONY: build run clean run-dev
+
