@@ -1,30 +1,66 @@
 package gateway
 
 import (
-	"log"
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"strings"
 	"time"
 
 	"stox-gateway/internal/config"
+
+	"go.uber.org/zap"
 )
 
-// LoggingMiddleware logs HTTP requests
+type contextKey string
+
+const requestIDKey contextKey = "request_id"
+
+// generateRequestID creates a random request ID
+func generateRequestID() string {
+	bytes := make([]byte, 8)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+
+// LoggingMiddleware logs HTTP requests with correlation IDs
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
+		// Generate request ID for correlation
+		requestID := generateRequestID()
+
+		// Add request ID to context
+		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+		r = r.WithContext(ctx)
+
+		// Add request ID to response headers for client correlation
+		w.Header().Set("X-Request-ID", requestID)
+
 		// Create a response writer wrapper to capture status code
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
+		// Create request-scoped logger with correlation fields
+		logger := zap.L().With(
+			zap.String("request_id", requestID),
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+		)
+
+		// Log request start
+		logger.Debug("HTTP Request Started",
+			zap.String("remote_addr", r.RemoteAddr),
+			zap.String("user_agent", r.UserAgent()),
+		)
+
 		next.ServeHTTP(wrapped, r)
 
-		log.Printf(
-			"%s %s %d %v",
-			r.Method,
-			r.RequestURI,
-			wrapped.statusCode,
-			time.Since(start),
+		// Log request completion
+		logger.Info("HTTP Request Completed",
+			zap.Int("status_code", wrapped.statusCode),
+			zap.Duration("duration", time.Since(start)),
 		)
 	})
 }
