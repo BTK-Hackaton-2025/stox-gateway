@@ -122,7 +122,7 @@ func NewAuthClient(host string, port int, logger *zap.Logger) (*AuthClient, erro
 	)
 
 	// Create insecure connection (use TLS in production)
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Error("Failed to connect to auth service", zap.Error(err))
 		return nil, fmt.Errorf("failed to connect to auth service: %v", err)
