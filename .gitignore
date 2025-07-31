@@ -52,10 +52,5 @@ Thumbs.db
 .env.local
 .env.production
 
-# Docker
-.dockerignore
-
 # Air (hot reload)
-tmp/ 
-
-config.yaml
+tmp/

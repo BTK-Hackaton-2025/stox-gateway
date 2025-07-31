@@ -1,0 +1,19 @@
+# Git
+.git/
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+
+# Build artifacts
+bin/
+tmp/
+
+# Dependency directories
+vendor/
+
+# Misc
+README.md
+LICENSE
+*.md
