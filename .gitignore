@@ -21,9 +21,6 @@ go.work
 bin/
 dist/
 
-# Generated protobuf files
-internal/proto/
-
 # Coverage reports
 coverage.out
 coverage.html
