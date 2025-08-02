@@ -21,9 +21,6 @@ go.work
 bin/
 dist/
 
-# Generated protobuf files
-internal/proto/
-
 # Coverage reports
 coverage.out
 coverage.html
@@ -52,10 +49,5 @@ Thumbs.db
 .env.local
 .env.production
 
-# Docker
-.dockerignore
-
 # Air (hot reload)
-tmp/ 
-
-config.yaml
+tmp/

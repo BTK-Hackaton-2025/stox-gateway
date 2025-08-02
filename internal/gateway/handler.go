@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -17,10 +19,22 @@ type AuthHandler struct {
 	authClient *grpcclients.AuthClient
 }
 
+// ImageHandler handles image processing-related HTTP requests
+type ImageHandler struct {
+	imageClient *grpcclients.ImageClient
+}
+
 // NewAuthHandler creates a new auth handler
 func NewAuthHandler(authClient *grpcclients.AuthClient) *AuthHandler {
 	return &AuthHandler{
 		authClient: authClient,
+	}
+}
+
+// NewImageHandler creates a new image handler
+func NewImageHandler(imageClient *grpcclients.ImageClient) *ImageHandler {
+	return &ImageHandler{
+		imageClient: imageClient,
 	}
 }
 
@@ -406,6 +420,72 @@ func (h *AuthHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		// If JSON encoding fails, log the error and return 500
 		http.Error(w, "Internal server error: failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+// ProcessImage handles image processing requests
+func (h *ImageHandler) ProcessImage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse multipart form
+	err := r.ParseMultipartForm(32 << 20) // 32MB max memory
+	if err != nil {
+		http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	// Get file from form
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "No image file provided", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Read file data
+	imageData, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Failed to read image data", http.StatusInternalServerError)
+		return
+	}
+
+	// Get MIME type from header
+	mimeType := header.Header.Get("Content-Type")
+	if mimeType == "" {
+		// Try to detect from filename extension or use default
+		filename := header.Filename
+		if strings.HasSuffix(strings.ToLower(filename), ".jpg") || strings.HasSuffix(strings.ToLower(filename), ".jpeg") {
+			mimeType = "image/jpeg"
+		} else if strings.HasSuffix(strings.ToLower(filename), ".png") {
+			mimeType = "image/png"
+		} else {
+			mimeType = "application/octet-stream"
+		}
+	}
+
+	// Get optional product name from form
+	productName := r.FormValue("product_name")
+
+	// Call gRPC service
+	resp, err := h.imageClient.ProcessImage(r.Context(), imageData, mimeType, productName)
+	if err != nil {
+		// Map gRPC error to appropriate HTTP status code
+		statusCode, message := mapGRPCError(err)
+		http.Error(w, message, statusCode)
+		return
+	}
+
+	// Set response headers
+	w.Header().Set("Content-Type", resp.MimeType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"processed_%s\"", header.Filename))
+
+	// Return processed image data
+	if _, err := w.Write(resp.ProcessedImageData); err != nil {
+		http.Error(w, "Failed to write image response", http.StatusInternalServerError)
 		return
 	}
 }

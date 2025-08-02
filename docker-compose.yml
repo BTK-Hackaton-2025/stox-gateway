@@ -1,0 +1,41 @@
+  services:
+    api-gateway:
+      image: stox-gateway:latest
+      container_name: stox-gateway
+      ports:
+        - "8080:8080"
+      restart: unless-stopped
+      environment:
+        - NODE_ENV=development
+        - LOG_LEVEL=debug
+      volumes:
+        - ./config.yaml:/app/config.yaml
+      networks:
+        - stox-network
+      depends_on:
+        - auth-service
+        
+    auth-service:
+      image: stox-auth:latest
+      container_name: stox-auth
+      restart: unless-stopped
+      ports:
+        - "50051:50051"
+        - "5051:5051"
+      networks:
+        - stox-network
+
+    image-service:
+      image: stox-image-service:latest
+      container_name: stox-image-service
+      restart: unless-stopped
+      environment:
+        - GEMINI_API_KEY=""
+      ports:
+        - "50061:50061"
+      networks:
+        - stox-network
+
+  networks:
+    stox-network:
+      driver: bridge

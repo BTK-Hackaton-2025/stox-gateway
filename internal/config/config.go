@@ -97,10 +97,10 @@ func setDefaults() {
 	viper.SetDefault("server.idle_timeout", "60s")
 
 	// Service defaults
-	viper.SetDefault("services.auth.host", "localhost")
+	viper.SetDefault("services.auth.host", "auth-service")
 	viper.SetDefault("services.auth.port", 50051)
-	viper.SetDefault("services.image.host", "localhost")
-	viper.SetDefault("services.image.port", 8000)
+	viper.SetDefault("services.image.host", "image-service")
+	viper.SetDefault("services.image.port", 50061)
 	viper.SetDefault("services.llm.host", "localhost")
 	viper.SetDefault("services.llm.port", 50052)
 	viper.SetDefault("services.queue.host", "localhost")
@@ -118,7 +118,7 @@ func setDefaults() {
 	viper.SetDefault("logging.format", "json")
 
 	// CORS defaults - secure by default
-	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:8080"})
+	viper.SetDefault("cors.allowed_origins", []string{"*"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("cors.allowed_headers", []string{"Content-Type", "Authorization"})
 }
