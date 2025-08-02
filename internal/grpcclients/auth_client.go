@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
-	pb "stox-gateway/internal/proto/auth"
+    pb "stox-gateway/internal/proto/auth"
 )
 
 // min returns the smaller of two integers

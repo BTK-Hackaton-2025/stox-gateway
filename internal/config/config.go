@@ -14,6 +14,7 @@ type Config struct {
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Logging  LoggingConfig  `mapstructure:"logging"`
 	CORS     CORSConfig     `mapstructure:"cors"`
+	RabbitMQ RabbitMQConfig `mapstructure:"rabbitmq"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -58,6 +59,15 @@ type CORSConfig struct {
 	AllowedOrigins []string `mapstructure:"allowed_origins"`
 	AllowedMethods []string `mapstructure:"allowed_methods"`
 	AllowedHeaders []string `mapstructure:"allowed_headers"`
+}
+
+// RabbitMQConfig holds RabbitMQ configuration
+type RabbitMQConfig struct {
+	URL         string `mapstructure:"url"`
+	Exchange    string `mapstructure:"exchange"`
+	RoutingKey  string `mapstructure:"routing_key"`
+	MaxRetries  int    `mapstructure:"max_retries"`
+	RetryDelay  time.Duration `mapstructure:"retry_delay"`
 }
 
 // LoadConfig reads configuration from file or environment variables
@@ -121,6 +131,13 @@ func setDefaults() {
 	viper.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:8080"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("cors.allowed_headers", []string{"Content-Type", "Authorization"})
+
+	// RabbitMQ defaults
+	viper.SetDefault("rabbitmq.url", "amqp://guest:guest@localhost:5672/")
+	viper.SetDefault("rabbitmq.exchange", "workflow_exchange")
+	viper.SetDefault("rabbitmq.routing_key", "workflow")
+	viper.SetDefault("rabbitmq.max_retries", 3)
+	viper.SetDefault("rabbitmq.retry_delay", "5s")
 }
 
 // GetAuthServiceAddress returns the full address for the auth service

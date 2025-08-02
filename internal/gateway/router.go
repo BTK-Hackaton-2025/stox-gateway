@@ -8,10 +8,14 @@ import (
 )
 
 // Router sets up the HTTP routes
-func NewRouter(authHandler *AuthHandler) *mux.Router {
-	// Check for nil authHandler to prevent runtime panics
+func NewRouter(authHandler *AuthHandler, workflowHandler *WorkflowHandler) *mux.Router {
+	// Check for nil handlers to prevent runtime panics
 	if authHandler == nil {
 		log.Printf("NewRouter: authHandler parameter is nil, cannot set up auth routes")
+		return nil
+	}
+	if workflowHandler == nil {
+		log.Printf("NewRouter: workflowHandler parameter is nil, cannot set up workflow routes")
 		return nil
 	}
 
@@ -26,6 +30,16 @@ func NewRouter(authHandler *AuthHandler) *mux.Router {
 	auth.HandleFunc("/login", authHandler.Login).Methods("POST")
 	auth.HandleFunc("/validate", authHandler.ValidateToken).Methods("POST")
 	auth.HandleFunc("/profile", authHandler.GetProfile).Methods("GET")
+
+	// Workflow routes
+	workflow := api.PathPrefix("/workflow").Subrouter()
+	workflow.HandleFunc("/upload", workflowHandler.UploadProduct).Methods("POST")
+	workflow.HandleFunc("/status", workflowHandler.GetWorkflowStatus).Methods("GET")
+	workflow.HandleFunc("/step-completed", workflowHandler.StepCompleted).Methods("POST")
+	workflow.HandleFunc("/list", workflowHandler.ListWorkflows).Methods("GET")
+
+	// WebSocket endpoint for real-time updates
+	router.HandleFunc("/ws", workflowHandler.WebSocketConnection)
 
 	// Health check
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

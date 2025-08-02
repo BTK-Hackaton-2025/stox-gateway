@@ -10,9 +10,12 @@ import (
 	"time"
 
 	"stox-gateway/internal/config"
+	"stox-gateway/internal/events"
 	"stox-gateway/internal/gateway"
 	"stox-gateway/internal/grpcclients"
 	"stox-gateway/internal/logger"
+	"stox-gateway/internal/websocket"
+	"stox-gateway/internal/workflow"
 
 	"go.uber.org/zap"
 )
@@ -36,6 +39,26 @@ func main() {
 
 	log := logger.Logger
 
+	// Create event bus (RabbitMQ)
+	eventBus, err := events.NewEventBus(&cfg.RabbitMQ, log)
+	if err != nil {
+		log.Fatal("Failed to create event bus", zap.Error(err))
+	}
+	defer eventBus.Close()
+
+	log.Info("Event bus connected successfully")
+
+	// Create WebSocket hub
+	wsHub := websocket.NewHub(log)
+	go wsHub.Run()
+
+	log.Info("WebSocket hub started")
+
+	// Create workflow manager
+	workflowManager := workflow.NewManager(eventBus, log)
+
+	log.Info("Workflow manager created")
+
 	// Create auth client
 	authClient, err := grpcclients.NewAuthClient(cfg.Services.Auth.Host, cfg.Services.Auth.Port, log)
 	if err != nil {
@@ -50,9 +73,10 @@ func main() {
 
 	// Create handlers
 	authHandler := gateway.NewAuthHandler(authClient)
+	workflowHandler := gateway.NewWorkflowHandler(workflowManager, wsHub, log)
 
 	// Create router
-	router := gateway.NewRouter(authHandler)
+	router := gateway.NewRouter(authHandler, workflowHandler)
 
 	// Apply middleware
 	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))
@@ -76,6 +100,11 @@ func main() {
 			log.Fatal("Failed to start server", zap.Error(err))
 		}
 	}()
+
+	log.Info("API Gateway started successfully",
+		zap.Int("port", cfg.Server.Port),
+		zap.String("rabbitmq_exchange", cfg.RabbitMQ.Exchange),
+	)
 
 	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
