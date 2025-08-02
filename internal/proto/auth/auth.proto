@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+option go_package = "stox-gateway/internal/proto/auth";
+
+package auth;
+
+// Authentication Service Protocol Buffer Definition
+//
+// This file defines the gRPC service interface for the NestJS authentication microservice.
+// It provides comprehensive user management and JWT-based authentication functionality.
+//
+// Rate Limiting:
+// - Register: 1 req/min (strict anti-spam protection)
+// - Login: 5 req/min (brute force protection)
+// - ValidateToken: Unlimited (performance optimization)
+// - RefreshToken: 10 req/min (reasonable refresh rate)
+// - Profile operations: 10-30 req/min (user management)
+// - ChangePassword: 3 req/min (strict security)
+//
+// Security Features:
+// - JWT access tokens (15 minutes expiry)
+// - Refresh tokens (7 days expiry) 
+// - Role-based access control (RBAC)
+// - Input validation and sanitization
+// - Secure error handling
+
+// Auth Service Definition
+service AuthService {
+  // User Registration
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  
+  // User Login
+  rpc Login(LoginRequest) returns (AuthResponse);
+  
+  // Token Validation
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  
+  // Token Refresh
+  rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
+  
+  // User Logout
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  
+  // Get User Profile
+  rpc GetProfile(GetProfileRequest) returns (UserProfileResponse);
+  
+  // Update User Profile
+  rpc UpdateProfile(UpdateProfileRequest) returns (UserProfileResponse);
+  
+  // Change Password
+  rpc ChangePassword(ChangePasswordRequest) returns (OperationResponse);
+}
+
+// Request Messages
+message RegisterRequest {
+  string email = 1;           // Valid email address (required)
+  string password = 2;        // Password meeting complexity requirements (required)
+  string firstName = 3;       // User's first name (required)
+  string lastName = 4;        // User's last name (required)
+  string role = 5;            // User role: "user", "admin", or "moderator" (optional, defaults to "user")
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message RefreshTokenRequest {
+  string refreshToken = 1;
+}
+
+message LogoutRequest {
+  string token = 1;           // Access token to invalidate (optional)
+  string refreshToken = 2;    // Refresh token to revoke (optional, at least one token should be provided)
+}
+
+message GetProfileRequest {
+  string userId = 1;          // ID of user whose profile to retrieve
+}
+
+message UpdateProfileRequest {
+  string userId = 1;          // ID of user whose profile to update (required)
+  string firstName = 2;       // New first name (optional)
+  string lastName = 3;        // New last name (optional)
+  string email = 4;           // New email address (optional, must be valid if provided)
+}
+
+message ChangePasswordRequest {
+  string userId = 1;          // ID of user whose password to change (required)
+  string currentPassword = 2; // Current password for verification (required)
+  string newPassword = 3;     // New password meeting complexity requirements (required)
+}
+
+// Response Messages
+message AuthResponse {
+  bool success = 1;             // Operation success status
+  string message = 2;           // Human-readable result message
+  UserData userData = 3;        // User information (present on successful registration/login)
+  TokenData tokenData = 4;      // Authentication tokens (present on successful registration/login/refresh)
+  repeated string errors = 5;   // List of validation or processing errors
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;               // Token validity status
+  string userId = 2;            // User ID from token (present if valid)
+  string email = 3;             // User email from token (present if valid)
+  string role = 4;              // User role from token (present if valid)
+  int64 exp = 5;                // Token expiration timestamp (Unix epoch)
+  string message = 6;           // Additional information or error message
+}
+
+message UserProfileResponse {
+  bool success = 1;
+  string message = 2;
+  UserData userData = 3;
+  repeated string errors = 4;
+}
+
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message OperationResponse {
+  bool success = 1;
+  string message = 2;
+  repeated string errors = 3;
+}
+
+// Data Transfer Objects
+message UserData {
+  string id = 1;                // Unique user identifier (UUID)
+  string email = 2;             // User's email address
+  string firstName = 3;         // User's first name
+  string lastName = 4;          // User's last name
+  string role = 5;              // User role: "user", "admin", or "moderator"
+  int64 createdAt = 6;          // Account creation timestamp (Unix epoch milliseconds)
+  int64 updatedAt = 7;          // Last account update timestamp (Unix epoch milliseconds)
+  bool isActive = 8;            // Account active status
+}
+
+message TokenData {
+  string accessToken = 1;       // JWT access token for API authentication
+  string refreshToken = 2;      // Refresh token for obtaining new access tokens
+  int64 expiresIn = 3;          // Access token expiration time in seconds
+  string tokenType = 4;         // Token type (typically "Bearer")
+} 
