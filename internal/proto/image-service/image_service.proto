@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package imageservice;
+
+option go_package = "stox-gateway/internal/proto/image-service";
+
+// Service definition for image processing
+service ImageService {
+  // Process an image and return the processed image
+  rpc ProcessImage(ProcessImageRequest) returns (ProcessImageResponse);
+}
+
+// Request message containing the input image
+message ProcessImageRequest {
+  bytes image_data = 1;  // Raw image bytes
+  string mime_type = 2;  // MIME type of the image (e.g., "image/jpeg", "image/png")
+  string product_name = 3;  // Optional product name for context
+}
+
+// Response message containing the processed image
+message ProcessImageResponse {
+  bytes processed_image_data = 1;  // Processed image bytes
+  string mime_type = 2;  // MIME type of the processed image
+  string message = 3;  // Optional message or status
+} 

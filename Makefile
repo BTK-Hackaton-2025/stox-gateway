@@ -11,10 +11,10 @@ run-dev:
 	go run cmd/api-gateway/main.go
 
 docker-build:
-	docker build -t stox-gateway .
+	docker build -t stox-gateway:latest .
 
 docker-run:
-	docker run -p 8080:8080 stox-gateway
+	docker run -p 8080:8080 stox-gateway:latest
 
 docker-compose-up:
 	docker-compose up -d

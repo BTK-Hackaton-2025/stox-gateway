@@ -48,11 +48,24 @@ func main() {
 		zap.Int("port", cfg.Services.Auth.Port),
 	)
 
+	// Create image client
+	imageClient, err := grpcclients.NewImageClient(cfg.Services.Image.Host, cfg.Services.Image.Port, log)
+	if err != nil {
+		log.Fatal("Failed to create image client", zap.Error(err))
+	}
+	defer imageClient.Close()
+
+	log.Info("Image client created successfully",
+		zap.String("host", cfg.Services.Image.Host),
+		zap.Int("port", cfg.Services.Image.Port),
+	)
+
 	// Create handlers
 	authHandler := gateway.NewAuthHandler(authClient)
+	imageHandler := gateway.NewImageHandler(imageClient)
 
 	// Create router
-	router := gateway.NewRouter(authHandler)
+	router := gateway.NewRouter(authHandler, imageHandler)
 
 	// Apply middleware
 	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))

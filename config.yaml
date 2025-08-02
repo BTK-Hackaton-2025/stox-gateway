@@ -12,7 +12,7 @@ services:
     port: 50051
   image:
     host: image-service
-    port: 8000
+    port: 50061
   llm:
     host: llm-service
     port: 50052
@@ -34,8 +34,7 @@ logging:
 
 cors:
   allowed_origins:
-    - http://localhost:3000
-    - https://yourdomain.com
+    - "*"
   allowed_methods:
     - GET
     - POST

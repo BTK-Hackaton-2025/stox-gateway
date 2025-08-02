@@ -1,8 +1,6 @@
   services:
     api-gateway:
-      build: 
-        context: .
-        dockerfile: Dockerfile
+      image: stox-gateway:latest
       container_name: stox-gateway
       ports:
         - "8080:8080"
@@ -25,7 +23,18 @@
         - "50051:50051"
         - "5051:5051"
       networks:
-        - stox-network  
+        - stox-network
+
+    image-service:
+      image: stox-image-service:latest
+      container_name: stox-image-service
+      restart: unless-stopped
+      environment:
+        - GEMINI_API_KEY=""
+      ports:
+        - "50061:50061"
+      networks:
+        - stox-network
 
   networks:
     stox-network:
