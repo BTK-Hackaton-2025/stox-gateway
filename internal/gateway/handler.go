@@ -31,6 +31,11 @@ func NewAuthHandler(authClient *grpcclients.AuthClient) *AuthHandler {
 	}
 }
 
+// GetAuthClient returns the auth client for middleware use
+func (h *AuthHandler) GetAuthClient() *grpcclients.AuthClient {
+	return h.authClient
+}
+
 // NewImageHandler creates a new image handler
 func NewImageHandler(imageClient *grpcclients.ImageClient) *ImageHandler {
 	return &ImageHandler{

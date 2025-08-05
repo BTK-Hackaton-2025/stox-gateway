@@ -1,41 +1,94 @@
-  services:
-    api-gateway:
-      image: stox-gateway:latest
-      container_name: stox-gateway
-      ports:
-        - "8080:8080"
-      restart: unless-stopped
-      environment:
-        - NODE_ENV=development
-        - LOG_LEVEL=debug
-      volumes:
-        - ./config.yaml:/app/config.yaml
-      networks:
-        - stox-network
-      depends_on:
-        - auth-service
-        
-    auth-service:
-      image: stox-auth:latest
-      container_name: stox-auth
-      restart: unless-stopped
-      ports:
-        - "50051:50051"
-        - "5051:5051"
-      networks:
-        - stox-network
+networks:
+  stox-network:
+    driver: bridge
 
-    image-service:
-      image: stox-image-service:latest
-      container_name: stox-image-service
-      restart: unless-stopped
-      environment:
-        - GEMINI_API_KEY=""
-      ports:
-        - "50061:50061"
-      networks:
-        - stox-network
+services:
+  # PostgreSQL Database for Auth Service (temporary for testing)
+  postgres:
+    image: postgres:15-alpine
+    container_name: stox-auth-postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: some-db
+      POSTGRES_USER: some-user
+      POSTGRES_PASSWORD: some-password
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stox-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stox_auth"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  networks:
-    stox-network:
-      driver: bridge
+  # Auth Service
+  auth-service:
+    image: stox-auth:latest
+    container_name: stox-auth
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+      - "5051:5051"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      # Database connection within Docker network
+      DB_HOST: some-host
+      DB_PORT: 5432
+      DB_USERNAME: some-user
+      DB_PASSWORD: some-password
+      DB_NAME: stox_auth
+      DB_MAX_CONNECTIONS: 10
+      DB_MIN_CONNECTIONS: 1
+      JWT_ACCESS_SECRET: some-key
+      JWT_REFRESH_SECRET: some-key
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      GRPC_HOST: 0.0.0.0
+      GRPC_PORT: 50051
+      HTTP_PORT: 5051
+    networks:
+      - stox-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Image Service
+  image-service:
+    image: stox-image-service:latest
+    container_name: stox-image-service
+    restart: unless-stopped
+    ports:
+      - "50061:50061"
+    env_file:
+      - .env
+    networks:
+      - stox-network
+
+  # API Gateway
+  api-gateway:
+    image: stox-gateway:latest
+    container_name: stox-gateway
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    networks:
+      - stox-network
+    depends_on:
+      - auth-service
+      - image-service
+
+volumes:
+  postgres_data:

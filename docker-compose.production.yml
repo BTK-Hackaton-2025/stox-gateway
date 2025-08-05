@@ -1,0 +1,49 @@
+# Production Docker Compose with Secrets
+# Use this file for production deployments: docker-compose -f docker-compose.yml -f docker-compose.production.yml up
+
+version: "3.8"
+
+secrets:
+  db_password:
+    external: true
+  jwt_access_secret:
+    external: true
+  jwt_refresh_secret:
+    external: true
+  aws_access_key:
+    external: true
+  aws_secret_key:
+    external: true
+  gemini_api_key:
+    external: true
+
+services:
+  postgres:
+    secrets:
+      - db_password
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+
+  auth-service:
+    secrets:
+      - db_password
+      - jwt_access_secret
+      - jwt_refresh_secret
+    environment:
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      JWT_ACCESS_SECRET_FILE: /run/secrets/jwt_access_secret
+      JWT_REFRESH_SECRET_FILE: /run/secrets/jwt_refresh_secret
+
+  image-service:
+    secrets:
+      - gemini_api_key
+    environment:
+      GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+
+  api-gateway:
+    secrets:
+      - aws_access_key
+      - aws_secret_key
+    environment:
+      AWS_ACCESS_KEY_ID_FILE: /run/secrets/aws_access_key
+      AWS_SECRET_ACCESS_KEY_FILE: /run/secrets/aws_secret_key

@@ -8,7 +8,7 @@ import (
 )
 
 // Router sets up the HTTP routes
-func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler) *mux.Router {
+func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUploadHandler *ImageUploadHandler) *mux.Router {
 	// Check for nil handlers to prevent runtime panics
 	if authHandler == nil {
 		log.Printf("NewRouter: authHandler parameter is nil, cannot set up auth routes")
@@ -16,6 +16,10 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler) *mux.Router
 	}
 	if imageHandler == nil {
 		log.Printf("NewRouter: imageHandler parameter is nil, cannot set up image routes")
+		return nil
+	}
+	if imageUploadHandler == nil {
+		log.Printf("NewRouter: imageUploadHandler parameter is nil, cannot set up image upload routes")
 		return nil
 	}
 
@@ -31,9 +35,17 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler) *mux.Router
 	auth.HandleFunc("/validate", authHandler.ValidateToken).Methods("POST")
 	auth.HandleFunc("/profile", authHandler.GetProfile).Methods("GET")
 
-	// Image routes
+	// Image processing routes (legacy)
 	image := api.PathPrefix("/image").Subrouter()
 	image.HandleFunc("/process", imageHandler.ProcessImage).Methods("POST")
+
+	// Image management routes with S3 and CloudFront
+	images := api.PathPrefix("/images").Subrouter()
+	// Add authentication middleware for all image operations
+	images.Use(AuthMiddleware(authHandler.GetAuthClient()))
+	images.HandleFunc("/upload", imageUploadHandler.UploadImage).Methods("POST")
+	images.HandleFunc("/list", imageUploadHandler.GetUserImages).Methods("GET")
+	images.HandleFunc("/delete/{imageId}", imageUploadHandler.DeleteUserImage).Methods("DELETE")
 
 	// Health check
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

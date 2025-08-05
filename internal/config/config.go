@@ -14,6 +14,7 @@ type Config struct {
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Logging  LoggingConfig  `mapstructure:"logging"`
 	CORS     CORSConfig     `mapstructure:"cors"`
+	AWS      AWSConfig      `mapstructure:"aws"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -58,6 +59,26 @@ type CORSConfig struct {
 	AllowedOrigins []string `mapstructure:"allowed_origins"`
 	AllowedMethods []string `mapstructure:"allowed_methods"`
 	AllowedHeaders []string `mapstructure:"allowed_headers"`
+}
+
+// AWSConfig holds AWS-related configuration
+type AWSConfig struct {
+	Region     string            `mapstructure:"region"`
+	S3         S3Config          `mapstructure:"s3"`
+	CloudFront CloudFrontConfig  `mapstructure:"cloudfront"`
+}
+
+// S3Config holds S3-related configuration
+type S3Config struct {
+	BucketName string `mapstructure:"bucket_name"`
+	Region     string `mapstructure:"region"`
+}
+
+// CloudFrontConfig holds CloudFront-related configuration
+type CloudFrontConfig struct {
+	DistributionID string `mapstructure:"distribution_id"`
+	DomainName     string `mapstructure:"domain_name"`
+	Region         string `mapstructure:"region"`
 }
 
 // LoadConfig reads configuration from file or environment variables
@@ -121,6 +142,14 @@ func setDefaults() {
 	viper.SetDefault("cors.allowed_origins", []string{"*"})
 	viper.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("cors.allowed_headers", []string{"Content-Type", "Authorization"})
+
+	// AWS defaults
+	viper.SetDefault("aws.region", "us-east-1")
+	viper.SetDefault("aws.s3.bucket_name", "btk-stox-s3")
+	viper.SetDefault("aws.s3.region", "us-east-1")
+	viper.SetDefault("aws.cloudfront.distribution_id", "")
+	viper.SetDefault("aws.cloudfront.domain_name", "")
+	viper.SetDefault("aws.cloudfront.region", "us-east-1")
 }
 
 // GetAuthServiceAddress returns the full address for the auth service
