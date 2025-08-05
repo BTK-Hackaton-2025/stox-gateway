@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"stox-gateway/internal/aws"
 	"stox-gateway/internal/config"
 	"stox-gateway/internal/gateway"
 	"stox-gateway/internal/grpcclients"
@@ -60,12 +61,47 @@ func main() {
 		zap.Int("port", cfg.Services.Image.Port),
 	)
 
+	// Initialize AWS Services
+	log.Info("Initializing AWS services")
+
+	// Create S3 service
+	s3Config := aws.S3Config{
+		BucketName: cfg.AWS.S3.BucketName,
+		Region:     cfg.AWS.S3.Region,
+	}
+	s3Service, err := aws.NewS3Service(s3Config, log)
+	if err != nil {
+		log.Fatal("Failed to create S3 service", zap.Error(err))
+	}
+
+	log.Info("S3 service created successfully",
+		zap.String("bucket", s3Config.BucketName),
+		zap.String("region", s3Config.Region),
+	)
+
+	// Create CloudFront service
+	cloudFrontConfig := aws.CloudFrontConfig{
+		DistributionID: cfg.AWS.CloudFront.DistributionID,
+		DomainName:     cfg.AWS.CloudFront.DomainName,
+		Region:         cfg.AWS.CloudFront.Region,
+	}
+	cloudFrontService, err := aws.NewCloudFrontService(cloudFrontConfig, log)
+	if err != nil {
+		log.Fatal("Failed to create CloudFront service", zap.Error(err))
+	}
+
+	log.Info("CloudFront service created successfully",
+		zap.String("distributionId", cloudFrontConfig.DistributionID),
+		zap.String("domainName", cloudFrontConfig.DomainName),
+	)
+
 	// Create handlers
 	authHandler := gateway.NewAuthHandler(authClient)
 	imageHandler := gateway.NewImageHandler(imageClient)
+	imageUploadHandler := gateway.NewImageUploadHandler(s3Service, cloudFrontService, imageClient, authClient, log)
 
 	// Create router
-	router := gateway.NewRouter(authHandler, imageHandler)
+	router := gateway.NewRouter(authHandler, imageHandler, imageUploadHandler)
 
 	// Apply middleware
 	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))

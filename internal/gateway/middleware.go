@@ -10,13 +10,22 @@ import (
 	"time"
 
 	"stox-gateway/internal/config"
+	pb "stox-gateway/internal/proto/auth"
 
 	"go.uber.org/zap"
 )
 
 type contextKey string
 
-const requestIDKey contextKey = "request_id"
+const (
+	requestIDKey contextKey = "request_id"
+	userIDKey    contextKey = "user_id"
+)
+
+// UserIDKey returns the context key for user ID (exported for use in handlers)
+func UserIDKey() contextKey {
+	return userIDKey
+}
 
 // generateRequestID creates a random request ID
 func generateRequestID() string {
@@ -113,4 +122,51 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+// AuthMiddleware validates JWT tokens and adds user context
+func AuthMiddleware(authClient interface {
+	ValidateToken(ctx context.Context, token string) (*pb.ValidateTokenResponse, error)
+}) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Get token from Authorization header
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				http.Error(w, `{"success": false, "error": "Authorization header missing"}`, http.StatusUnauthorized)
+				return
+			}
+			
+			// Extract Bearer token
+			tokenParts := strings.Split(authHeader, " ")
+			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+				http.Error(w, `{"success": false, "error": "Invalid authorization header format"}`, http.StatusUnauthorized)
+				return
+			}
+			
+			token := tokenParts[1]
+			
+			// Validate token
+			validateResponse, err := authClient.ValidateToken(r.Context(), token)
+			if err != nil {
+				http.Error(w, `{"success": false, "error": "Token validation failed"}`, http.StatusUnauthorized)
+				return
+			}
+			
+			if !validateResponse.Valid {
+				http.Error(w, `{"success": false, "error": "Invalid token"}`, http.StatusUnauthorized)
+				return
+			}
+			
+			// Add user ID to request context
+			ctx := context.WithValue(r.Context(), userIDKey, validateResponse.UserId)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// ValidateResponse represents token validation response  
+type ValidateResponse struct {
+	Valid  bool   `json:"valid"`
+	UserId string `json:"userId"`
 }

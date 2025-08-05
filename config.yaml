@@ -24,7 +24,7 @@ services:
     port: 50054
 
 jwt:
-  secret_key: ${JWT_SECRET_KEY}
+  secret_key: your-super-secret-jwt-key-change-this-in-production
   access_expiry: 15m
   refresh_expiry: 168h # 7 days
 
@@ -44,3 +44,14 @@ cors:
   allowed_headers:
     - Content-Type
     - Authorization
+
+# AWS Configuration for S3 and CloudFront
+aws:
+  region: us-east-1
+  s3:
+    bucket_name: btk-stox-s3
+    region: us-east-1
+  cloudfront:
+    distribution_id: ${CLOUDFRONT_DISTRIBUTION_ID}
+    domain_name: ${CLOUDFRONT_DOMAIN_NAME}
+    region: us-east-1
