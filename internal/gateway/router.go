@@ -47,6 +47,9 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUpload
 	images.HandleFunc("/list", imageUploadHandler.GetUserImages).Methods("GET")
 	images.HandleFunc("/delete/{imageId}", imageUploadHandler.DeleteUserImage).Methods("DELETE")
 
+	// E-commerce handler will be registered separately
+	// This approach allows for simpler integration
+
 	// Health check
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		// Set status header - WriteHeader doesn't return an error but can fail silently

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -9,12 +10,19 @@ import (
 
 // Config holds all configuration for the API Gateway
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Services ServicesConfig `mapstructure:"services"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Logging  LoggingConfig  `mapstructure:"logging"`
-	CORS     CORSConfig     `mapstructure:"cors"`
-	AWS      AWSConfig      `mapstructure:"aws"`
+	Server      ServerConfig      `mapstructure:"server"`
+	Services    ServicesConfig    `mapstructure:"services"`
+	JWT         JWTConfig         `mapstructure:"jwt"`
+	Logging     LoggingConfig     `mapstructure:"logging"`
+	CORS        CORSConfig        `mapstructure:"cors"`
+	AWS         AWSConfig         `mapstructure:"aws"`
+	ECommerce   ECommerceConfig   `mapstructure:"ecommerce"`
+}
+
+// ECommerceConfig holds MockECommerce integration configuration
+type ECommerceConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+	APIKey  string `mapstructure:"api_key"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -91,6 +99,11 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// Environment variables
 	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// E-commerce environment variable mapping
+	viper.BindEnv("ecommerce.base_url", "ECOMMERCE_BASE_URL")
+	viper.BindEnv("ecommerce.api_key", "ECOMMERCE_API_KEY")
 
 	// Set defaults
 	setDefaults()
@@ -150,6 +163,10 @@ func setDefaults() {
 	viper.SetDefault("aws.cloudfront.distribution_id", "")
 	viper.SetDefault("aws.cloudfront.domain_name", "")
 	viper.SetDefault("aws.cloudfront.region", "us-east-1")
+
+	// ECommerce defaults
+	viper.SetDefault("ecommerce.base_url", "http://localhost:5000")
+	viper.SetDefault("ecommerce.api_key", "default-api-key")
 }
 
 // GetAuthServiceAddress returns the full address for the auth service

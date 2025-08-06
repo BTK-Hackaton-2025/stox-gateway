@@ -10,9 +10,9 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: some-db
-      POSTGRES_USER: some-user
-      POSTGRES_PASSWORD: some-password
+      POSTGRES_DB: stox_auth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 4Lt0g
     ports:
       - "5437:5432"
     volumes:
@@ -38,15 +38,15 @@ services:
     environment:
       NODE_ENV: development
       # Database connection within Docker network
-      DB_HOST: some-host
+      DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: some-user
-      DB_PASSWORD: some-password
+      DB_USERNAME: postgres
+      DB_PASSWORD: 4Lt0g
       DB_NAME: stox_auth
       DB_MAX_CONNECTIONS: 10
       DB_MIN_CONNECTIONS: 1
-      JWT_ACCESS_SECRET: some-key
-      JWT_REFRESH_SECRET: some-key
+      JWT_ACCESS_SECRET: 7OPh1tewP7I4sYcKindc5uclMxj9fYtnCywzHoN/xiI=
+      JWT_REFRESH_SECRET: kK3naFXvQTqEr+Ld+tzYeeXaVQMMml7ssynD4H5lBvE=
       JWT_ACCESS_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       GRPC_HOST: 0.0.0.0

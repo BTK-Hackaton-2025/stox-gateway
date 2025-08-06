@@ -19,14 +19,13 @@ import (
 )
 
 func main() {
-	// Load configuration first to get logging settings
-	cfg, err := config.LoadConfig("config.yaml")
+	// Load configuration
+	cfg, err := config.LoadConfig(".")
 	if err != nil {
-		// Use basic logging before we have our configured logger
-		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
 		os.Exit(1)
 	}
-
+	
 	// Initialize logger with config-driven settings
 	if err := logger.InitLogger(cfg.Logging.Level, cfg.Logging.Format, cfg.Server.Environment); err != nil {
 		// Use basic logging before we have our configured logger
@@ -36,6 +35,12 @@ func main() {
 	defer logger.Sync()
 
 	log := logger.Logger
+
+	// Add debug log for application start
+	log.Info("=== MAIN FUNCTION STARTED ===",
+		zap.String("ecommerce_base_url", cfg.ECommerce.BaseURL),
+		zap.String("ecommerce_api_key", cfg.ECommerce.APIKey),
+	)
 
 	// Create auth client
 	authClient, err := grpcclients.NewAuthClient(cfg.Services.Auth.Host, cfg.Services.Auth.Port, log)
@@ -99,9 +104,17 @@ func main() {
 	authHandler := gateway.NewAuthHandler(authClient)
 	imageHandler := gateway.NewImageHandler(imageClient)
 	imageUploadHandler := gateway.NewImageUploadHandler(s3Service, cloudFrontService, imageClient, authClient, log)
+	
+	// Create e-commerce handler
+	ecommerceHandler := gateway.NewECommerceHandler(cfg.ECommerce.BaseURL, log)
+
+	log.Info("E-commerce handler created successfully")
 
 	// Create router
 	router := gateway.NewRouter(authHandler, imageHandler, imageUploadHandler)
+	
+	// Register e-commerce routes
+	ecommerceHandler.RegisterECommerceRoutes(router, authHandler)
 
 	// Apply middleware
 	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))
