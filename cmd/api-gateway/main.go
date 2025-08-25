@@ -61,13 +61,26 @@ func main() {
 		zap.Int("port", cfg.Services.Image.Port),
 	)
 
+	// Create agent client
+	agentClient, err := grpcclients.NewAgentClient(cfg.Services.Agent.Host, cfg.Services.Agent.Port, log)
+	if err != nil {
+		log.Fatal("Failed to create agent client", zap.Error(err))
+	}
+	defer agentClient.Close()
+
+	log.Info("Agent client created successfully",
+		zap.String("host", cfg.Services.Agent.Host),
+		zap.Int("port", cfg.Services.Agent.Port),
+	)
+
 	// Initialize AWS Services
 	log.Info("Initializing AWS services")
 
 	// Create S3 service
 	s3Config := aws.S3Config{
-		BucketName: cfg.AWS.S3.BucketName,
-		Region:     cfg.AWS.S3.Region,
+		BucketName:       cfg.AWS.S3.BucketName,
+		Region:           cfg.AWS.S3.Region,
+		CloudFrontDomain: cfg.AWS.CloudFront.DomainName,
 	}
 	s3Service, err := aws.NewS3Service(s3Config, log)
 	if err != nil {
@@ -77,6 +90,7 @@ func main() {
 	log.Info("S3 service created successfully",
 		zap.String("bucket", s3Config.BucketName),
 		zap.String("region", s3Config.Region),
+		zap.String("cloudFrontDomain", s3Config.CloudFrontDomain),
 	)
 
 	// Create CloudFront service
@@ -95,13 +109,26 @@ func main() {
 		zap.String("domainName", cloudFrontConfig.DomainName),
 	)
 
+	// Create MockECommerce client
+	mockECommerceClient := gateway.NewMockECommerceClient(&cfg.Services.MockEcommerce)
+
+	log.Info("MockECommerce client created successfully",
+		zap.String("host", cfg.Services.MockEcommerce.Host),
+		zap.String("baseURL", cfg.Services.MockEcommerce.BaseURL),
+	)
+
 	// Create handlers
 	authHandler := gateway.NewAuthHandler(authClient)
 	imageHandler := gateway.NewImageHandler(imageClient)
 	imageUploadHandler := gateway.NewImageUploadHandler(s3Service, cloudFrontService, imageClient, authClient, log)
+	chatHandler := gateway.NewChatHandler(agentClient, authClient, s3Service, cloudFrontService, log)
+	
+	// Create MockECommerce handlers and middleware
+	apiKeyMiddleware := gateway.NewAPIKeyMiddleware(mockECommerceClient, log)
+	productHandler := gateway.NewProductHandler(mockECommerceClient, log)
 
 	// Create router
-	router := gateway.NewRouter(authHandler, imageHandler, imageUploadHandler)
+	router := gateway.NewRouter(authHandler, imageHandler, imageUploadHandler, chatHandler, productHandler, apiKeyMiddleware)
 
 	// Apply middleware
 	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))
