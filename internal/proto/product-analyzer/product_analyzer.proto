@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package productanalyzer;
+
+option go_package = "stox-gateway/internal/proto/product-analyzer";
+
+// Product Image Analyzer service for SEO-optimized product content generation
+service ProductAnalyzer {
+  // Generate product title and description from image bytes
+  rpc GenerateFromImage(ImageRequest) returns (ImageResponse);
+  
+  // Generate product title and description from image URL
+  rpc GenerateFromImageUrl(ImageUrlRequest) returns (ImageResponse);
+  
+  // Health check endpoint
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request with image data
+message ImageRequest {
+  bytes image = 1;           // Image binary data
+  string filename = 2;       // Original filename
+  string content_type = 3;   // MIME type (image/jpeg, image/png, etc.)
+}
+
+// Request with image URL
+message ImageUrlRequest {
+  string image_url = 1;      // URL to the image
+}
+
+// Response with generated content
+message ImageResponse {
+  string title = 1;          // SEO-optimized product title (max 60 chars)
+  string description = 2;    // SEO-optimized product description (150-300 words)
+  string search_info = 3;    // Market research information (optional)
+}
+
+// Health check messages
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;         // "healthy" or error message
+  string service = 2;        // Service name
+}

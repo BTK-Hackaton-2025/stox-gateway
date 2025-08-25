@@ -73,6 +73,18 @@ func main() {
 		zap.Int("port", cfg.Services.Agent.Port),
 	)
 
+	// Create product analyzer client
+	productAnalyzerClient, err := grpcclients.NewProductAnalyzerClient(cfg.Services.ProductAnalyzer.Host, cfg.Services.ProductAnalyzer.Port, log)
+	if err != nil {
+		log.Fatal("Failed to create product analyzer client", zap.Error(err))
+	}
+	defer productAnalyzerClient.Close()
+
+	log.Info("Product analyzer client created successfully",
+		zap.String("host", cfg.Services.ProductAnalyzer.Host),
+		zap.Int("port", cfg.Services.ProductAnalyzer.Port),
+	)
+
 	// Initialize AWS Services
 	log.Info("Initializing AWS services")
 
@@ -122,13 +134,14 @@ func main() {
 	imageHandler := gateway.NewImageHandler(imageClient)
 	imageUploadHandler := gateway.NewImageUploadHandler(s3Service, cloudFrontService, imageClient, authClient, log)
 	chatHandler := gateway.NewChatHandler(agentClient, authClient, s3Service, cloudFrontService, log)
-	
+	productAnalyzerHandler := gateway.NewProductAnalyzerHandler(productAnalyzerClient, authClient, log)
+
 	// Create MockECommerce handlers and middleware
 	apiKeyMiddleware := gateway.NewAPIKeyMiddleware(mockECommerceClient, log)
 	productHandler := gateway.NewProductHandler(mockECommerceClient, log)
 
 	// Create router
-	router := gateway.NewRouter(authHandler, imageHandler, imageUploadHandler, chatHandler, productHandler, apiKeyMiddleware)
+	router := gateway.NewRouter(authHandler, imageHandler, imageUploadHandler, chatHandler, productHandler, productAnalyzerHandler, apiKeyMiddleware)
 
 	// Apply middleware
 	handler := gateway.CORSMiddleware(&cfg.CORS)(gateway.LoggingMiddleware(router))

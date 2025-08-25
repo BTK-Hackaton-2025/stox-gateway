@@ -28,12 +28,13 @@ type ServerConfig struct {
 
 // ServicesConfig holds microservice endpoints
 type ServicesConfig struct {
-	Auth         ServiceConfig         `mapstructure:"auth"`
-	Image        ServiceConfig         `mapstructure:"image"`
-	LLM          ServiceConfig         `mapstructure:"llm"`
-	Queue        ServiceConfig         `mapstructure:"queue"`
-	Agent        ServiceConfig         `mapstructure:"agent"`
-	MockEcommerce MockEcommerceConfig  `mapstructure:"mock_ecommerce"`
+	Auth            ServiceConfig       `mapstructure:"auth"`
+	Image           ServiceConfig       `mapstructure:"image"`
+	LLM             ServiceConfig       `mapstructure:"llm"`
+	Queue           ServiceConfig       `mapstructure:"queue"`
+	Agent           ServiceConfig       `mapstructure:"agent"`
+	ProductAnalyzer ServiceConfig       `mapstructure:"product_analyzer"`
+	MockEcommerce   MockEcommerceConfig `mapstructure:"mock_ecommerce"`
 }
 
 // ServiceConfig holds individual service configuration
@@ -44,10 +45,10 @@ type ServiceConfig struct {
 
 // MockEcommerceConfig holds MockECommerce API configuration
 type MockEcommerceConfig struct {
-	Host                       string `mapstructure:"host"`
-	Port                       int    `mapstructure:"port"`
-	BaseURL                    string `mapstructure:"base_url"`
-	APIKeyValidationEndpoint   string `mapstructure:"api_key_validation_endpoint"`
+	Host                     string `mapstructure:"host"`
+	Port                     int    `mapstructure:"port"`
+	BaseURL                  string `mapstructure:"base_url"`
+	APIKeyValidationEndpoint string `mapstructure:"api_key_validation_endpoint"`
 }
 
 // JWTConfig holds JWT-related configuration
@@ -72,9 +73,9 @@ type CORSConfig struct {
 
 // AWSConfig holds AWS-related configuration
 type AWSConfig struct {
-	Region     string            `mapstructure:"region"`
-	S3         S3Config          `mapstructure:"s3"`
-	CloudFront CloudFrontConfig  `mapstructure:"cloudfront"`
+	Region     string           `mapstructure:"region"`
+	S3         S3Config         `mapstructure:"s3"`
+	CloudFront CloudFrontConfig `mapstructure:"cloudfront"`
 }
 
 // S3Config holds S3-related configuration
@@ -137,6 +138,8 @@ func setDefaults() {
 	viper.SetDefault("services.queue.port", 50053)
 	viper.SetDefault("services.agent.host", "localhost")
 	viper.SetDefault("services.agent.port", 50054)
+	viper.SetDefault("services.product_analyzer.host", "localhost")
+	viper.SetDefault("services.product_analyzer.port", 50071)
 
 	// JWT defaults
 	viper.SetDefault("jwt.secret_key", "your-secret-key-change-in-production")
@@ -184,4 +187,9 @@ func (c *Config) GetQueueServiceAddress() string {
 // GetAgentServiceAddress returns the full address for the agent service
 func (c *Config) GetAgentServiceAddress() string {
 	return fmt.Sprintf("%s:%d", c.Services.Agent.Host, c.Services.Agent.Port)
+}
+
+// GetProductAnalyzerServiceAddress returns the full address for the product analyzer service
+func (c *Config) GetProductAnalyzerServiceAddress() string {
+	return fmt.Sprintf("%s:%d", c.Services.ProductAnalyzer.Host, c.Services.ProductAnalyzer.Port)
 }

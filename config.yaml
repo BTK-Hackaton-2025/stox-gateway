@@ -22,6 +22,9 @@ services:
   agent:
     host: agent-service
     port: 50054
+  product_analyzer:
+    host: localhost
+    port: 50071
 
 jwt:
   secret_key: your-super-secret-jwt-key-change-this-in-production

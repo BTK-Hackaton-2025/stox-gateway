@@ -8,7 +8,7 @@ import (
 )
 
 // Router sets up the HTTP routes
-func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUploadHandler *ImageUploadHandler, chatHandler *ChatHandler, productHandler *ProductHandler, apiKeyMiddleware *APIKeyMiddleware) *mux.Router {
+func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUploadHandler *ImageUploadHandler, chatHandler *ChatHandler, productHandler *ProductHandler, productAnalyzerHandler *ProductAnalyzerHandler, apiKeyMiddleware *APIKeyMiddleware) *mux.Router {
 	// Check for nil handlers to prevent runtime panics
 	if authHandler == nil {
 		log.Printf("NewRouter: authHandler parameter is nil, cannot set up auth routes")
@@ -28,6 +28,10 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUpload
 	}
 	if productHandler == nil {
 		log.Printf("NewRouter: productHandler parameter is nil, cannot set up product routes")
+		return nil
+	}
+	if productAnalyzerHandler == nil {
+		log.Printf("NewRouter: productAnalyzerHandler parameter is nil, cannot set up product analyzer routes")
 		return nil
 	}
 	if apiKeyMiddleware == nil {
@@ -65,6 +69,13 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUpload
 	chat.Use(AuthMiddleware(authHandler.GetAuthClient()))
 	chat.HandleFunc("/message", chatHandler.Chat).Methods("POST")
 	chat.HandleFunc("/seo", chatHandler.AnalyzeSEO).Methods("POST")
+
+	// Product Analysis routes
+	productAnalysis := api.PathPrefix("/product-analysis").Subrouter()
+	// Add authentication middleware for product analysis operations
+	productAnalysis.Use(AuthMiddleware(authHandler.GetAuthClient()))
+	productAnalysis.HandleFunc("/analyze-image", productAnalyzerHandler.AnalyzeProductImage).Methods("POST")
+	productAnalysis.HandleFunc("/analyze-url", productAnalyzerHandler.AnalyzeProductImageFromURL).Methods("POST")
 
 	// Static files for web interface
 	router.PathPrefix("/web/").Handler(http.StripPrefix("/web/", http.FileServer(http.Dir("./web/"))))
