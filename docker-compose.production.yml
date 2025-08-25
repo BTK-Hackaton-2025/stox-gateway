@@ -40,6 +40,12 @@ services:
     environment:
       GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
 
+  seo-service:
+    secrets:
+      - gemini_api_key
+    environment:
+      GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+
   api-gateway:
     secrets:
       - aws_access_key

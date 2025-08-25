@@ -70,6 +70,26 @@ services:
     networks:
       - stox-network
 
+  # SEO Service (Product Analyzer)
+  seo-service:
+    image: stox-seo-service:latest
+    container_name: stox-seo-service
+    restart: unless-stopped
+    ports:
+      - "50071:50071"
+    env_file:
+      - .env
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GRPC_PORT: 50071
+    networks:
+      - stox-network
+    healthcheck:
+      test: ["CMD", "python", "health_check.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # API Gateway
   api-gateway:
     image: stox-gateway:latest
@@ -89,6 +109,7 @@ services:
     depends_on:
       - auth-service
       - image-service
+      - seo-service
 
 volumes:
   postgres_data:

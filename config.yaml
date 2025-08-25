@@ -23,7 +23,7 @@ services:
     host: agent-service
     port: 50054
   product_analyzer:
-    host: localhost
+    host: seo-service
     port: 50071
 
 jwt:
