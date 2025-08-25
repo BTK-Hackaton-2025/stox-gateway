@@ -28,17 +28,26 @@ type ServerConfig struct {
 
 // ServicesConfig holds microservice endpoints
 type ServicesConfig struct {
-	Auth  ServiceConfig `mapstructure:"auth"`
-	Image ServiceConfig `mapstructure:"image"`
-	LLM   ServiceConfig `mapstructure:"llm"`
-	Queue ServiceConfig `mapstructure:"queue"`
-	Agent ServiceConfig `mapstructure:"agent"`
+	Auth         ServiceConfig         `mapstructure:"auth"`
+	Image        ServiceConfig         `mapstructure:"image"`
+	LLM          ServiceConfig         `mapstructure:"llm"`
+	Queue        ServiceConfig         `mapstructure:"queue"`
+	Agent        ServiceConfig         `mapstructure:"agent"`
+	MockEcommerce MockEcommerceConfig  `mapstructure:"mock_ecommerce"`
 }
 
 // ServiceConfig holds individual service configuration
 type ServiceConfig struct {
 	Host string `mapstructure:"host"`
 	Port int    `mapstructure:"port"`
+}
+
+// MockEcommerceConfig holds MockECommerce API configuration
+type MockEcommerceConfig struct {
+	Host                       string `mapstructure:"host"`
+	Port                       int    `mapstructure:"port"`
+	BaseURL                    string `mapstructure:"base_url"`
+	APIKeyValidationEndpoint   string `mapstructure:"api_key_validation_endpoint"`
 }
 
 // JWTConfig holds JWT-related configuration

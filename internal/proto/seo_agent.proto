@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package seo_agent;
+
+option go_package = "stox-gateway/internal/proto/seo_agent";
+
+// The SEO Agent service definition
+service SEOAgentService {
+  // Health check endpoint
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  
+  // Analyze image for SEO purposes
+  rpc AnalyzeSEO(AnalyzeSEORequest) returns (AnalyzeSEOResponse);
+  
+  // General chat endpoint
+  rpc Chat(ChatRequest) returns (ChatResponse);
+}
+
+// Health check messages
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  string service = 2;
+}
+
+// SEO analysis messages
+message AnalyzeSEORequest {
+  string image_url = 1;
+}
+
+message AnalyzeSEOResponse {
+  bool success = 1;
+  string image_url = 2;
+  string analysis = 3;
+  repeated string intermediate_steps = 4;
+  string error = 5;
+}
+
+// Chat messages
+message ChatRequest {
+  string message = 1;
+}
+
+message ChatResponse {
+  bool success = 1;
+  string response = 2;
+  repeated string intermediate_steps = 3;
+  string error = 4;
+}

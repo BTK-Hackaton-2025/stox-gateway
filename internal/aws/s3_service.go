@@ -20,18 +20,20 @@ import (
 
 // S3Service handles all S3 operations for the image management system
 type S3Service struct {
-	client     *s3.Client
-	uploader   *manager.Uploader
-	downloader *manager.Downloader
-	bucketName string
-	region     string
-	logger     *zap.Logger
+	client            *s3.Client
+	uploader          *manager.Uploader
+	downloader        *manager.Downloader
+	bucketName        string
+	region            string
+	cloudFrontDomain  string
+	logger            *zap.Logger
 }
 
 // S3Config holds configuration for S3 service
 type S3Config struct {
-	BucketName string
-	Region     string
+	BucketName       string
+	Region           string
+	CloudFrontDomain string
 }
 
 // ImageUploadResult contains the result of an image upload operation
@@ -60,12 +62,13 @@ func NewS3Service(cfg S3Config, logger *zap.Logger) (*S3Service, error) {
 	client := s3.NewFromConfig(awsCfg)
 	
 	return &S3Service{
-		client:     client,
-		uploader:   manager.NewUploader(client),
-		downloader: manager.NewDownloader(client),
-		bucketName: cfg.BucketName,
-		region:     cfg.Region,
-		logger:     logger,
+		client:           client,
+		uploader:         manager.NewUploader(client),
+		downloader:       manager.NewDownloader(client),
+		bucketName:       cfg.BucketName,
+		region:           cfg.Region,
+		cloudFrontDomain: cfg.CloudFrontDomain,
+		logger:           logger,
 	}, nil
 }
 
@@ -157,9 +160,17 @@ func (s *S3Service) uploadImage(ctx context.Context, key string, imageData io.Re
 		zap.String("userID", userID),
 	)
 	
+	// Generate CloudFront URL
+	cloudFrontURL := fmt.Sprintf("https://%s/%s", s.cloudFrontDomain, key)
+	
+	s.logger.Info("Generating CloudFront URL", 
+		zap.String("domain", s.cloudFrontDomain),
+		zap.String("key", key),
+	)
+	
 	return &ImageUploadResult{
 		Key:         key,
-		URL:         result.Location,
+		URL:         cloudFrontURL,
 		UserID:      userID,
 		ImageType:   imageType,
 		FileName:    fileName,

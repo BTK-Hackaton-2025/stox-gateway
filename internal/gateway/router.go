@@ -8,7 +8,7 @@ import (
 )
 
 // Router sets up the HTTP routes
-func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUploadHandler *ImageUploadHandler) *mux.Router {
+func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUploadHandler *ImageUploadHandler, chatHandler *ChatHandler, productHandler *ProductHandler, apiKeyMiddleware *APIKeyMiddleware) *mux.Router {
 	// Check for nil handlers to prevent runtime panics
 	if authHandler == nil {
 		log.Printf("NewRouter: authHandler parameter is nil, cannot set up auth routes")
@@ -20,6 +20,18 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUpload
 	}
 	if imageUploadHandler == nil {
 		log.Printf("NewRouter: imageUploadHandler parameter is nil, cannot set up image upload routes")
+		return nil
+	}
+	if chatHandler == nil {
+		log.Printf("NewRouter: chatHandler parameter is nil, cannot set up chat routes")
+		return nil
+	}
+	if productHandler == nil {
+		log.Printf("NewRouter: productHandler parameter is nil, cannot set up product routes")
+		return nil
+	}
+	if apiKeyMiddleware == nil {
+		log.Printf("NewRouter: apiKeyMiddleware parameter is nil, cannot set up external API routes")
 		return nil
 	}
 
@@ -46,6 +58,27 @@ func NewRouter(authHandler *AuthHandler, imageHandler *ImageHandler, imageUpload
 	images.HandleFunc("/upload", imageUploadHandler.UploadImage).Methods("POST")
 	images.HandleFunc("/list", imageUploadHandler.GetUserImages).Methods("GET")
 	images.HandleFunc("/delete/{imageId}", imageUploadHandler.DeleteUserImage).Methods("DELETE")
+
+	// Chat and SEO routes
+	chat := api.PathPrefix("/chat").Subrouter()
+	// Add authentication middleware for chat operations
+	chat.Use(AuthMiddleware(authHandler.GetAuthClient()))
+	chat.HandleFunc("/message", chatHandler.Chat).Methods("POST")
+	chat.HandleFunc("/seo", chatHandler.AnalyzeSEO).Methods("POST")
+
+	// Static files for web interface
+	router.PathPrefix("/web/").Handler(http.StripPrefix("/web/", http.FileServer(http.Dir("./web/"))))
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/web/chat.html", http.StatusFound)
+	})
+
+	// External API routes (MockECommerce proxy) - requires API key validation
+	external := api.PathPrefix("/external").Subrouter()
+	external.HandleFunc("/products", apiKeyMiddleware.ValidateJWTAndAPIKey(productHandler.GetProducts)).Methods("GET")
+	external.HandleFunc("/products", apiKeyMiddleware.ValidateJWTAndAPIKey(productHandler.CreateProduct)).Methods("POST")
+	external.HandleFunc("/products/{id}", apiKeyMiddleware.ValidateJWTAndAPIKey(productHandler.GetProductByID)).Methods("GET")
+	external.HandleFunc("/products/{id}", apiKeyMiddleware.ValidateJWTAndAPIKey(productHandler.UpdateProduct)).Methods("PUT")
+	external.HandleFunc("/products/{id}", apiKeyMiddleware.ValidateJWTAndAPIKey(productHandler.DeleteProduct)).Methods("DELETE")
 
 	// Health check
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
